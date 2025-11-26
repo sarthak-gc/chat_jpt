@@ -5,6 +5,7 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc -b",
+    "generate": "yarn prisma generate",
     "start": "node dist/index.js"
   },
   "dependencies": {
