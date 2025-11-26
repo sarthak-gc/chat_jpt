@@ -42,12 +42,14 @@ export const MessageControllers = {
         0
       );
 
-      const messageWithValidType: ModelMessage[] = aiMessages.map((msg) => {
-        return {
-          role: "assistant",
-          content: msg.content,
-        };
-      });
+      const messageWithValidType: ModelMessage[] = aiMessages.map(
+        (msg: any) => {
+          return {
+            role: "assistant",
+            content: msg.content,
+          };
+        }
+      );
 
       const streams = getAiResponse(
         message,
