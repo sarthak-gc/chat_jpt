@@ -71,3 +71,11 @@ export const tryDiffLogin = (res: Response) => {
     message: "Try login via google",
   });
 };
+
+export const unAuthorized = (res: Response) => {
+  res.status(401).json({
+    status: "error",
+    errorType: "UnAuthorized",
+    message: "Unable to access the conversation",
+  });
+};

@@ -4,6 +4,7 @@ import {
   conversationNotFound,
   internalError,
   success,
+  unAuthorized,
 } from "../utils/return/returns";
 
 export const ConversationControllers = {
@@ -58,6 +59,11 @@ export const ConversationControllers = {
       const conversation = await ConversationServices.get(conversationId);
       if (!conversation) {
         conversationNotFound(res);
+        return;
+      }
+
+      if (conversation.userId !== req.userId) {
+        unAuthorized(res);
         return;
       }
 
