@@ -6,8 +6,7 @@ import env from "./utils/env";
 const app = express();
 app.use(
   cors({
-    // origin: env.FRONTEND_URL,
-    origin: "*",
+    origin: env.FRONTEND_URL,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
