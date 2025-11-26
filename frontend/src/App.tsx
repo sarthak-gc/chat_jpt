@@ -14,12 +14,14 @@ const App = () => {
       path: "/dashboard",
       element: (
         <ProtectedRoutes>
-          <div className="w-full flex">
-            <Sidebar className={"w-1/10"} />
-            <div className="w-9/10">
-              <Index />
+          <ConversationProvider>
+            <div className="w-full flex">
+              <Sidebar className={"w-1/10"} />
+              <div className="w-9/10">
+                <Index />
+              </div>
             </div>
-          </div>
+          </ConversationProvider>
         </ProtectedRoutes>
       ),
       children: [
@@ -27,12 +29,14 @@ const App = () => {
           path: ":id",
           element: (
             <ProtectedRoutes>
-              <div className="w-full flex">
-                <Sidebar className={"w-1/10"} />
-                <div className="w-9/10">
-                  <Index />
+              <ConversationProvider>
+                <div className="w-full flex">
+                  <Sidebar className={"w-1/10"} />
+                  <div className="w-9/10">
+                    <Index />
+                  </div>
                 </div>
-              </div>
+              </ConversationProvider>
             </ProtectedRoutes>
           ),
         },
@@ -43,9 +47,7 @@ const App = () => {
 
   return (
     <div className="dark flex flex-col h-screen bg-[#212121] text-gray-100 overflow-hidden">
-      <ConversationProvider>
-        <RouterProvider router={router} />
-      </ConversationProvider>
+      <RouterProvider router={router} />
     </div>
   );
 };
