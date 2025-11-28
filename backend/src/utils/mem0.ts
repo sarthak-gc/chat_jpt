@@ -2,13 +2,7 @@ import { Message } from "mem0ai";
 import { client } from "../config/mem0";
 
 export const getMemories = async (userId: string, prompt: string) => {
-  const message: Message = {
-    role: "user",
-    content: prompt,
-  };
-
-  await client.add([message], { user_id: userId });
-
+  await setMemories(userId, prompt);
   const filters = {
     OR: [{ user_id: userId }],
   };
@@ -26,4 +20,12 @@ export const getMemories = async (userId: string, prompt: string) => {
     };
   });
   return JSON.stringify(information);
+};
+
+export const setMemories = async (user_id: string, prompt: string) => {
+  const message: Message = {
+    role: "user",
+    content: prompt,
+  };
+  await client.add([message], { user_id });
 };

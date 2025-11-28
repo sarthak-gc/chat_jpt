@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { ConversationServices } from "../services/conversation.services";
 import { MessageServices } from "../services/message.services";
 import { getAiResponse } from "../utils/ai";
-import { getMemories } from "../utils/mem0";
+import { getMemories, setMemories } from "../utils/mem0";
 import { conversationNotFound } from "../utils/return/returns";
 
 export const MessageControllers = {
@@ -65,6 +65,7 @@ export const MessageControllers = {
       }
 
       res.end();
+      await setMemories(userId, wholeResponse);
       await MessageServices.create(conversationId, wholeResponse, "AI", "TEXT");
     } catch (err) {
       await prisma.message.delete({
