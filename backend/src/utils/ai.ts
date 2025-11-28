@@ -2,12 +2,14 @@ import { google } from "@ai-sdk/google";
 
 import { ModelMessage, streamText } from "ai";
 import { config } from "dotenv";
+import fs from "fs";
 config();
 
-export const getAiResponse = async function* (
+export const getAiResponseText = async function* (
   prompt: string,
   information: string,
-  messages: ModelMessage[]
+  messages: ModelMessage[],
+  filePath?: string
 ) {
   const finalPrompt = information
     ? `${prompt}
@@ -17,7 +19,22 @@ export const getAiResponse = async function* (
 
   const { textStream } = streamText({
     model: google("gemini-2.5-flash"),
-    messages: [...messages, { role: "user", content: finalPrompt }],
+    messages: [
+      ...messages,
+      {
+        role: "user",
+        content: filePath
+          ? [
+              { type: "text", text: finalPrompt },
+              {
+                type: "file",
+                mediaType: "application/pdf",
+                data: fs.readFileSync(filePath),
+              },
+            ]
+          : finalPrompt,
+      },
+    ],
   });
 
   for await (const textPart of textStream) {
