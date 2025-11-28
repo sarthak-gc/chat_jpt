@@ -43,7 +43,7 @@ const Index = () => {
       fetchConversation();
     }
   }, [id, navigate]);
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, file?: File) => {
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "User",
@@ -54,14 +54,28 @@ const Index = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/message/${id}/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message: content }),
-        credentials: "include",
-      });
+      let response: Response;
+
+      if (file) {
+        const formData = new FormData();
+        formData.append("message", content);
+        formData.append("file", file);
+
+        response = await fetch(`${BACKEND_URL}/message/${id}/chat`, {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        });
+      } else {
+        response = await fetch(`${BACKEND_URL}/message/${id}/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message: content }),
+          credentials: "include",
+        });
+      }
 
       if (!response.body) {
         throw new Error("No response body");

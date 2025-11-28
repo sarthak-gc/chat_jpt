@@ -1,23 +1,50 @@
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Globe, Paperclip, Voicemail } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Textarea } from "./ui/textarea";
 
 interface ChatInputProps {
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, file?: File) => void;
   disabled?: boolean;
 }
 
 const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
   const [message, setMessage] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | undefined>();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (message.trim() && !disabled) {
-      onSendMessage(message);
+    if (file) {
+      onSendMessage(message, file);
+      setFile(undefined);
       setMessage("");
+    } else {
+      if (message.trim() && !disabled) {
+        onSendMessage(message);
+        setMessage("");
+      }
     }
   };
+
+  const handleFileSelect = async () => {
+    if (fileInputRef.current && !disabled) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+      return;
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0];
+    if (selected && selected.type === "application/pdf") {
+      setFile(selected);
+    } else {
+      setFile(undefined);
+    }
+  };
+
+  const handleWebSearch = () => {};
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -31,9 +58,51 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
       <div className="max-w-3xl mx-auto px-4">
         <form
           onSubmit={handleSubmit}
-          className="relative   gap-2 rounded-2xl border shadow-lg bg-[#303030]"
+          className="relative gap-2 rounded-2xl border shadow-lg bg-[#303030]"
         >
-          <div className="flex flex-col  relative gap-2 rounded-2xl border shadow-lg">
+          <div className="flex flex-col relative gap-2 rounded-2xl border shadow-lg">
+            {file && (
+              <div className="flex items-center gap-2 px-2 py-2">
+                <div className="w-24 h-28 bg-[#303030] rounded-md border border-gray-700 shadow-inner flex flex-col items-center justify-center relative overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setFile(undefined)}
+                    className="absolute top-1 right-1 z-10 bg-[#222] bg-opacity-80 text-gray-300 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer hover:bg-[#444] transition"
+                    aria-label="Remove selected file"
+                    tabIndex={0}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-3 w-3"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M6.47 6.47a.75.75 0 011.06 0L10 8.94l2.47-2.47a.75.75 0 111.06 1.06L11.06 10l2.47 2.47a.75.75 0 11-1.06 1.06L10 11.06l-2.47 2.47a.75.75 0 11-1.06-1.06L8.94 10l-2.47-2.47a.75.75 0 010-1.06z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                  <div className="flex flex-col items-center justify-center w-full h-full">
+                    <div className="w-10 h-12 rounded-sm shadow-md flex items-center justify-center mb-2 relative bg-linear-to-br from-[#d32f2f] via-[#b71c1c] to-[#8e2424]">
+                      <span className="font-bold text-xs text-white absolute bottom-1 left-0 right-0 text-center tracking-widest">
+                        PDF
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-gray-300 truncate px-1 text-center w-full">
+                      {file.name}
+                    </span>
+                  </div>
+                  <div className="absolute top-1.5 left-1.5 right-1.5 bottom-8 pointer-events-none opacity-25">
+                    <div className="w-full h-2 bg-gray-700/40 rounded-sm my-0.5" />
+                    <div className="w-5/6 h-2 bg-gray-700/20 rounded-sm my-0.5 mx-auto" />
+                    <div className="w-full h-2 bg-gray-700/25 rounded-sm my-0.5" />
+                    <div className="w-2/3 h-2 bg-gray-700/30 rounded-sm my-0.5 mx-auto" />
+                  </div>
+                </div>
+              </div>
+            )}
             <Textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -44,20 +113,32 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
             />
             <div className="flex items-center gap-1 pl-3 pb-2 justify-between relative rounded-2xl">
               <div className="">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={handleFileChange}
+                  disabled={disabled}
+                />
                 <Button
+                  onClick={handleFileSelect}
                   type="button"
                   variant="ghost"
                   size="sm"
                   className="h-8 px-2 text-gray-400 hover:text-gray-200 hover:bg-transparent"
+                  disabled={disabled}
                 >
                   <Paperclip className="h-4 w-4 mr-1.5" />
                   <span className="text-xs">Attach</span>
                 </Button>
                 <Button
+                  onClick={handleWebSearch}
                   type="button"
                   variant="ghost"
                   size="sm"
                   className="h-8 px-2 text-gray-400 hover:text-gray-200 hover:bg-transparent"
+                  disabled={disabled}
                 >
                   <Globe className="h-4 w-4 mr-1.5" />
                   <span className="text-xs">Search</span>
