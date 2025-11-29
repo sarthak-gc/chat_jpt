@@ -1,6 +1,7 @@
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
+import path from "path";
 import routes from "./routes";
 import env from "./utils/env";
 const app = express();
@@ -16,5 +17,7 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use("/", routes);
+
 app.listen(env.PORT);

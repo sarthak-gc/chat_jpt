@@ -83,8 +83,9 @@ export const MessageControllers = {
         wholeResponse += chunk;
         res.write(`${chunk}`);
       }
-
-      res.end();
+      if (file?.path)
+        res.end(JSON.stringify({ status: "complete", url: file.path }));
+      else res.end();
       await setMemories(userId, wholeResponse);
       await MessageServices.create(conversationId, wholeResponse, "AI", "TEXT");
     } catch (err) {
