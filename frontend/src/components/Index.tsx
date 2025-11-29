@@ -18,6 +18,7 @@ const Index = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [pdfUrl, setPdfUrl] = useState("");
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -95,18 +96,37 @@ const Index = () => {
       const decoder = new TextDecoder();
       let done = false;
 
+      const isJson = (str: string) => {
+        try {
+          JSON.parse(str);
+          return true;
+        } catch {
+          return false;
+        }
+      };
       while (!done) {
         const { value, done: readerDone } = await reader.read();
         done = readerDone;
         const chunk = decoder.decode(value);
 
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === aiMessageId
-              ? { ...msg, content: msg.content + chunk }
-              : msg
-          )
-        );
+        let jsonResponse: { url: string; status: string } = {
+          url: "",
+          status: "",
+        };
+        if (isJson(chunk)) {
+          jsonResponse = JSON.parse(chunk);
+          if (jsonResponse.url) {
+            setPdfUrl(jsonResponse.url);
+          }
+        } else {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMessageId
+                ? { ...msg, content: msg.content + chunk }
+                : msg
+            )
+          );
+        }
       }
     } catch (error) {
       console.error("Error streaming response:", error);
@@ -122,49 +142,68 @@ const Index = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#212121]">
-      <ChatHeader />
+    <div className="flex">
+      <div
+        className={`flex ${
+          pdfUrl ? "w-7/10" : "w-full"
+        } flex-col h-screen bg-[#212121]`}
+      >
+        <ChatHeader />
 
-      <div className="flex-1 overflow-y-auto">
-        {!id ? (
-          <div className="w-full h-7/10 items-center justify-center flex">
-            <EmptyState />
-          </div>
-        ) : (
-          <div className="w-full">
-            {messages.map((message) => (
-              <ChatMessage
-                key={message.id}
-                role={message.role}
-                content={message.content}
-              />
-            ))}
-            {isLoading && (
-              <div className="w-full py-6">
-                <div className="max-w-5xl mx-auto px-4">
-                  <div className="flex gap-4 items-start">
-                    <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-[#19c37d] text-white">
-                      <Sparkles className="h-4 w-4" />
-                    </div>
-                    <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-[#303030]">
-                      <div className="flex gap-1 pt-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-75" />
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-150" />
+        <div className="flex-1 overflow-y-auto">
+          {!id ? (
+            <div className="w-full h-7/10 items-center justify-center flex">
+              <EmptyState />
+            </div>
+          ) : (
+            <div className="w-full">
+              {messages.map((message) => (
+                <ChatMessage
+                  key={message.id}
+                  role={message.role}
+                  content={message.content}
+                />
+              ))}
+              {isLoading && (
+                <div className="w-full py-6">
+                  <div className="max-w-5xl mx-auto px-4">
+                    <div className="flex gap-4 items-start">
+                      <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-[#19c37d] text-white">
+                        <Sparkles className="h-4 w-4" />
+                      </div>
+                      <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-[#303030]">
+                        <div className="flex gap-1 pt-1">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-75" />
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-150" />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+
+        {id && (
+          <div className="w-full">
+            <ChatInput
+              onSendMessage={handleSendMessage}
+              disabled={isLoading}
+              setPdfUrl={setPdfUrl}
+            />
           </div>
         )}
       </div>
-
-      {id && (
-        <div className="w-full">
-          <ChatInput onSendMessage={handleSendMessage} disabled={isLoading} />
+      {pdfUrl && (
+        <div className="bg-red-400 w-3/10">
+          <embed
+            src={pdfUrl}
+            type="application/pdf"
+            className="w-full h-screen"
+          />
         </div>
       )}
     </div>

@@ -1,14 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Globe, Paperclip, Voicemail } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { Textarea } from "./ui/textarea";
 
 interface ChatInputProps {
   onSendMessage: (message: string, file?: File) => void;
   disabled?: boolean;
+  setPdfUrl: Dispatch<SetStateAction<string>>;
 }
 
-const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
+const ChatInput = ({ onSendMessage, disabled, setPdfUrl }: ChatInputProps) => {
   const [message, setMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | undefined>();
@@ -18,6 +19,7 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
     if (file) {
       onSendMessage(message, file);
       setFile(undefined);
+      setPdfUrl("");
       setMessage("");
     } else {
       if (message.trim() && !disabled) {
@@ -39,8 +41,10 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
     const selected = e.target.files?.[0];
     if (selected && selected.type === "application/pdf") {
       setFile(selected);
+      setPdfUrl(URL.createObjectURL(selected));
     } else {
       setFile(undefined);
+      setPdfUrl("");
     }
   };
 
@@ -66,7 +70,10 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
                 <div className="w-24 h-28 bg-[#303030] rounded-md border border-gray-700 shadow-inner flex flex-col items-center justify-center relative overflow-hidden">
                   <button
                     type="button"
-                    onClick={() => setFile(undefined)}
+                    onClick={() => {
+                      setFile(undefined);
+                      setPdfUrl("");
+                    }}
                     className="absolute top-1 right-1 z-10 bg-[#222] bg-opacity-80 text-gray-300 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer hover:bg-[#444] transition"
                     aria-label="Remove selected file"
                     tabIndex={0}
