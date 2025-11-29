@@ -5,7 +5,9 @@ export const MessageServices = {
     conversationId: string,
     content: string,
     role: Role,
-    type: MessageType
+    type: MessageType,
+    filePath?: string,
+    originalName?: string
   ) => {
     return await prisma.message.create({
       data: {
@@ -13,6 +15,9 @@ export const MessageServices = {
         content,
         role,
         type,
+        fileAttached: type == "PDF" ? true : false,
+        filePath,
+        originalName,
       },
     });
   },

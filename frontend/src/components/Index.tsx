@@ -12,6 +12,9 @@ interface Message {
   id: string;
   role: "User" | "AI";
   content: string;
+  filePath?: string;
+  fileAttached?: boolean;
+  originalName?: string;
 }
 
 const Index = () => {
@@ -44,11 +47,21 @@ const Index = () => {
       fetchConversation();
     }
   }, [id, navigate]);
-  const handleSendMessage = async (content: string, file?: File) => {
+  const handleSendMessage = async (
+    content: string,
+    mode: "SUMMARIZE" | "GENERATE",
+    file?: File
+  ) => {
+    if (!file) {
+      setPdfUrl("");
+    }
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "User",
       content,
+      fileAttached: pdfUrl ? true : false,
+      filePath: pdfUrl,
+      originalName: file ? file.name : "",
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -73,7 +86,7 @@ const Index = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ message: content }),
+          body: JSON.stringify({ message: content, mode }),
           credentials: "include",
         });
       }
@@ -83,13 +96,16 @@ const Index = () => {
       }
 
       const aiMessageId = (Date.now() + 1).toString();
-      const aiMessage: Message = {
-        id: aiMessageId,
-        role: "AI",
-        content: "",
-      };
 
-      setMessages((prev) => [...prev, aiMessage]);
+      if (mode == "SUMMARIZE") {
+        const aiMessage: Message = {
+          id: aiMessageId,
+          role: "AI",
+          content: "",
+        };
+
+        setMessages((prev) => [...prev, aiMessage]);
+      }
       setIsLoading(false);
 
       const reader = response.body.getReader();
@@ -109,16 +125,30 @@ const Index = () => {
         done = readerDone;
         const chunk = decoder.decode(value);
 
-        let jsonResponse: { url: string; status: string } = {
+        let jsonResponse: {
+          url: string;
+          status: string;
+          type: "TXT" | "IMG";
+          message: Message | null;
+        } = {
           url: "",
           status: "",
+          type: "TXT",
+          message: null,
         };
         if (isJson(chunk)) {
           jsonResponse = JSON.parse(chunk);
-          if (jsonResponse.url) {
-            setPdfUrl(jsonResponse.url);
+          if (jsonResponse.type == "IMG") {
+            if (jsonResponse.message) {
+              setMessages((prev) => [...prev, jsonResponse.message as Message]);
+            }
+          } else {
+            if (jsonResponse.url) {
+              setPdfUrl(jsonResponse.url);
+            }
           }
         } else {
+          console.log("HERE");
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === aiMessageId
@@ -159,9 +189,13 @@ const Index = () => {
             <div className="w-full">
               {messages.map((message) => (
                 <ChatMessage
+                  setPdfUrl={setPdfUrl}
                   key={message.id}
                   role={message.role}
                   content={message.content}
+                  fileAttached={message.fileAttached}
+                  filePath={message.filePath}
+                  originalName={message.originalName}
                 />
               ))}
               {isLoading && (
@@ -198,9 +232,13 @@ const Index = () => {
         )}
       </div>
       {pdfUrl && (
-        <div className="bg-red-400 w-3/10">
+        <div className="w-3/10">
           <embed
-            src={pdfUrl}
+            src={
+              pdfUrl.startsWith("blob:http://")
+                ? pdfUrl
+                : `http://localhost:4002/${pdfUrl}`
+            }
             type="application/pdf"
             className="w-full h-screen"
           />

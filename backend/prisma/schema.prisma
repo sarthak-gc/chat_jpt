@@ -33,6 +33,9 @@ model Message {
   conversationId String
   content        String
 
+  fileAttached Boolean
+  originalName String?
+  filePath     String?
   role         Role
   type         MessageType
   conversation Conversation @relation(fields: [conversationId], references: [id])
@@ -40,8 +43,9 @@ model Message {
 }
 
 enum MessageType {
-  IMAGEFILE
-  TEXT
+  PDF
+  IMG
+  TXT
 }
 
 enum Role {

@@ -1,24 +1,68 @@
 import { ModelMessage } from "ai";
 import { Request, Response } from "express";
 import path from "path";
+import { generateImage } from "../config/freepik";
 import { ConversationServices } from "../services/conversation.services";
 import { MessageServices } from "../services/message.services";
 import { getAiResponseText } from "../utils/ai";
 import { getMemories, setMemories } from "../utils/mem0";
+import prisma from "../utils/prisma";
 import { conversationNotFound } from "../utils/return/returns";
+
+type MessageType = "SUMMARIZE" | "GENERATE";
 
 export const MessageControllers = {
   liveChat: async (req: Request, res: Response) => {
     const userId = req.userId;
     const conversationId = req.params.conversationId;
 
-    const message = req.body.message || {};
-    const file = req.file;
+    let messageType: MessageType = req.body?.mode;
+    if (!messageType) {
+      messageType = "SUMMARIZE";
+    }
 
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
+
+    let message = "";
     let msgId = "";
+
+    message = req.body.message || {};
+    if (messageType == "GENERATE") {
+      const url = await generateImage(message);
+
+      const userMessage = await MessageServices.create(
+        conversationId,
+        message,
+        "User",
+        "TXT"
+      );
+      msgId = userMessage.id;
+      const newImageMessage = await MessageServices.create(
+        conversationId,
+        "Here's your image",
+        "AI",
+        "IMG",
+        url
+      );
+
+      res.end(
+        JSON.stringify({
+          status: "complete",
+          type: "IMG",
+          message: {
+            id: newImageMessage.id,
+            role: "AI",
+            content: "Here's your image",
+            filePath: url,
+          },
+        })
+      );
+      return;
+    }
+
+    const file = req.file;
 
     try {
       const conversation = await ConversationServices.get(conversationId);
@@ -47,14 +91,7 @@ export const MessageControllers = {
       );
 
       let streams: AsyncGenerator<string, void, unknown>;
-      const newMessage = await MessageServices.create(
-        conversationId,
-        message,
-        "User",
-        "TEXT"
-      );
-      msgId = newMessage.id;
-      const userInformation = await getMemories(userId, message);
+      const userInformation = await getMemories(userId, message || "");
 
       let filePath: string = "";
       if (file) {
@@ -70,6 +107,17 @@ export const MessageControllers = {
         }
         filePath = path.join(__dirname, "../../", `${file.path}`);
       }
+
+      const newMessage = await MessageServices.create(
+        conversationId,
+        message,
+        "User",
+        filePath ? "PDF" : "TXT",
+        file?.path,
+        file?.originalname
+      );
+
+      msgId = newMessage.id;
       streams = getAiResponseText(
         message,
         userInformation,
@@ -84,16 +132,21 @@ export const MessageControllers = {
         res.write(`${chunk}`);
       }
       if (file?.path)
-        res.end(JSON.stringify({ status: "complete", url: file.path }));
+        res.end(
+          JSON.stringify({ type: "TXT", status: "complete", url: file.path })
+        );
       else res.end();
       await setMemories(userId, wholeResponse);
-      await MessageServices.create(conversationId, wholeResponse, "AI", "TEXT");
+      await MessageServices.create(conversationId, wholeResponse, "AI", "TXT");
     } catch (err) {
-      await prisma.message.delete({
-        where: {
-          id: msgId,
-        },
-      });
+      console.log(err);
+      if (msgId) {
+        await prisma.message.delete({
+          where: {
+            id: msgId,
+          },
+        });
+      }
       res.write("data: [ERROR]\n\n");
       res.end();
     }

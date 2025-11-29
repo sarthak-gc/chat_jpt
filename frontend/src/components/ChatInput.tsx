@@ -1,10 +1,21 @@
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Globe, Paperclip, Voicemail } from "lucide-react";
+import {
+  ArrowUp,
+  Globe,
+  Image as ImageIcon,
+  MessageSquareText,
+  Paperclip,
+  Voicemail,
+} from "lucide-react";
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { Textarea } from "./ui/textarea";
 
 interface ChatInputProps {
-  onSendMessage: (message: string, file?: File) => void;
+  onSendMessage: (
+    message: string,
+    mode: "SUMMARIZE" | "GENERATE",
+    file?: File
+  ) => void;
   disabled?: boolean;
   setPdfUrl: Dispatch<SetStateAction<string>>;
 }
@@ -13,17 +24,18 @@ const ChatInput = ({ onSendMessage, disabled, setPdfUrl }: ChatInputProps) => {
   const [message, setMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | undefined>();
+  const [mode, setMode] = useState<"SUMMARIZE" | "GENERATE">("SUMMARIZE");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (file) {
-      onSendMessage(message, file);
+      onSendMessage(message, mode, file);
       setFile(undefined);
       setPdfUrl("");
       setMessage("");
     } else {
       if (message.trim() && !disabled) {
-        onSendMessage(message);
+        onSendMessage(message, mode);
         setMessage("");
       }
     }
@@ -57,9 +69,41 @@ const ChatInput = ({ onSendMessage, disabled, setPdfUrl }: ChatInputProps) => {
     }
   };
 
+  const modeButtonStyle = (selected: boolean) =>
+    `flex items-center gap-1 px-3 py-1 rounded-full text-xs transition-colors
+     ${
+       selected
+         ? "bg-[#222] border border-[#633cff] text-[#c7bfff] shadow-inner"
+         : "bg-transparent text-gray-400 hover:text-gray-100 border border-transparent"
+     }`;
+
   return (
     <div className="sticky bottom-0 w-full border-t border-gray-700/50 bg-[#212121] pt-6 mt-4">
       <div className="max-w-3xl mx-auto px-4">
+        <div className="flex items-center justify-end gap-2 mb-2 select-none">
+          <button
+            type="button"
+            className={modeButtonStyle(mode === "SUMMARIZE")}
+            aria-pressed={mode === "SUMMARIZE"}
+            onClick={() => setMode("SUMMARIZE")}
+            tabIndex={0}
+            aria-label="Text generation mode"
+          >
+            <MessageSquareText className="w-4 h-4" />
+            Text
+          </button>
+          <button
+            type="button"
+            className={modeButtonStyle(mode === "GENERATE")}
+            aria-pressed={mode === "GENERATE"}
+            onClick={() => setMode("GENERATE")}
+            tabIndex={0}
+            aria-label="Image generation mode"
+          >
+            <ImageIcon className="w-4 h-4" />
+            Image
+          </button>
+        </div>
         <form
           onSubmit={handleSubmit}
           className="relative gap-2 rounded-2xl border shadow-lg bg-[#303030]"
@@ -114,7 +158,11 @@ const ChatInput = ({ onSendMessage, disabled, setPdfUrl }: ChatInputProps) => {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask anything"
+              placeholder={
+                mode === "GENERATE"
+                  ? "Describe the image you want to generate…"
+                  : "Ask anything"
+              }
               className="flex-1 min-h-[52px] max-h-[200px] resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-gray-100 placeholder:text-gray-400 py-3 px-2"
               rows={1}
             />
@@ -134,7 +182,7 @@ const ChatInput = ({ onSendMessage, disabled, setPdfUrl }: ChatInputProps) => {
                   variant="ghost"
                   size="sm"
                   className="h-8 px-2 text-gray-400 hover:text-gray-200 hover:bg-transparent"
-                  disabled={disabled}
+                  disabled={disabled || mode == "GENERATE"}
                 >
                   <Paperclip className="h-4 w-4 mr-1.5" />
                   <span className="text-xs">Attach</span>

@@ -55,6 +55,9 @@ export const ConversationServices = {
             content: true,
             role: true,
             id: true,
+            filePath: true,
+            fileAttached: true,
+            originalName: true,
           },
           orderBy: {
             createdAt: "desc",
