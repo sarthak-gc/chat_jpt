@@ -4,10 +4,14 @@ import path from "path";
 import { generateImage } from "../config/freepik";
 import { ConversationServices } from "../services/conversation.services";
 import { MessageServices } from "../services/message.services";
-import { getAiResponseText } from "../utils/ai";
+import { getAiResponseFile, getAiResponseForText } from "../utils/ai";
 import { getMemories, setMemories } from "../utils/mem0";
 import prisma from "../utils/prisma";
 import { conversationNotFound } from "../utils/return/returns";
+export interface ModelMessageForGemini {
+  role: "user" | "model";
+  parts: [{ text: string }];
+}
 
 type MessageType = "SUMMARIZE" | "GENERATE";
 
@@ -81,17 +85,8 @@ export const MessageControllers = {
         0
       );
 
-      const messageWithValidType: ModelMessage[] = aiMessages.map(
-        (msg: any) => {
-          return {
-            role: "assistant",
-            content: msg.content,
-          };
-        }
-      );
-
       let streams: AsyncGenerator<string, void, unknown>;
-      const userInformation = await getMemories(userId, message || "");
+      const userInformation = await getMemories(userId, message);
 
       let filePath: string = "";
       if (file) {
@@ -118,12 +113,38 @@ export const MessageControllers = {
       );
 
       msgId = newMessage.id;
-      streams = getAiResponseText(
-        message,
-        userInformation,
-        messageWithValidType,
-        filePath
-      );
+      if (filePath) {
+        const messageWithValidType: ModelMessage[] = aiMessages.map((msg) => {
+          return {
+            role: msg.role == "AI" ? "assistant" : "user",
+            content: msg.content,
+          };
+        });
+
+        streams = getAiResponseFile(
+          message,
+          userInformation,
+          messageWithValidType,
+          filePath
+        );
+      } else {
+        const messageWithValidType: ModelMessageForGemini[] = aiMessages.map(
+          (msg) => {
+            return {
+              role: msg.role == "AI" ? "model" : "user",
+              parts: [{ text: msg.content }],
+            };
+          }
+        );
+
+        const oauthToken = req.cookies.oauth_token;
+        streams = getAiResponseForText(
+          message,
+          userInformation,
+          messageWithValidType,
+          oauthToken
+        );
+      }
 
       let wholeResponse = "";
 
@@ -136,7 +157,7 @@ export const MessageControllers = {
           JSON.stringify({ type: "TXT", status: "complete", url: file.path })
         );
       else res.end();
-      await setMemories(userId, wholeResponse);
+      if (wholeResponse) await setMemories(userId, wholeResponse);
       await MessageServices.create(conversationId, wholeResponse, "AI", "TXT");
     } catch (err) {
       console.log(err);
