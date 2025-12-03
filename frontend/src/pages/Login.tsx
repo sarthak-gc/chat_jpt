@@ -1,15 +1,14 @@
 import { Button } from "@/components/ui/button";
-import { GOOGLE_OAUTH_CALLBACK_URL } from "@/utils/constants";
+import { GOOGLE_CLIENT_ID, GOOGLE_OAUTH_CALLBACK_URL } from "@/utils/constants";
 
 const LoginPage = () => {
   const handleClick = () => {
-    const googleClientId =
-      "244014981134-p40pljlq55q3amqfu7havml9taptto8t.apps.googleusercontent.com";
+    const googleClientId = GOOGLE_CLIENT_ID;
 
     const redirectUri = GOOGLE_OAUTH_CALLBACK_URL;
 
     const scope =
-      "openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/generative-language.retriever https://www.googleapis.com/auth/cloud-platform";
+      "openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/generative-language.retriever";
 
     const targetUrl =
       `https://accounts.google.com/o/oauth2/auth?` +
